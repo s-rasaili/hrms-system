@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Superadmin Dashboard</title>
+  <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    .stat-card { border-left: 4px solid #dc3545; }
+    .navbar { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+  </style>
+</head>
+<body>
+
+<nav class="navbar navbar-expand navbar-dark">
+  <span class="navbar-brand">Superadmin Dashboard</span>
+  <div class="ml-auto">
+    <span class="text-white mr-3" id="userName">Admin</span>
+    <button class="btn btn-outline-light btn-sm" id="logoutBtn">Logout</button>
+  </div>
+</nav>
+
+<div class="container-fluid mt-4">
+  
+  <!-- Stats Cards -->
+  <div class="row mb-4">
+    <div class="col-md-3">
+      <div class="card stat-card">
+        <div class="card-body">
+          <h6 class="text-muted">Total Employees</h6>
+          <h3 id="totalEmployees">0</h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card stat-card">
+        <div class="card-body">
+          <h6 class="text-muted">Present Today</h6>
+          <h3 id="presentToday">0</h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card stat-card">
+        <div class="card-body">
+          <h6 class="text-muted">Pending Leave Requests</h6>
+          <h3 id="pendingLeaves">0</h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card stat-card">
+        <div class="card-body">
+          <h6 class="text-muted">Upcoming Holidays</h6>
+          <h3 id="upcomingHolidays">0</h3>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick Actions -->
+  <div class="row mb-4">
+    <div class="col-md-12">
+      <div class="card">
+        <div class="card-header bg-danger text-white">
+          <h5 class="mb-0">Superadmin Controls</h5>
+        </div>
+        <div class="card-body">
+          <button class="btn btn-primary mr-2" data-toggle="modal" data-target="#addHRModal">Add HR Profile</button>
+          <button class="btn btn-success mr-2" data-toggle="modal" data-target="#addEmployeeModal">Add Employee</button>
+          <button class="btn btn-info mr-2" data-toggle="modal" data-target="#addDesignationModal">Add Designation</button>
+          <button class="btn btn-warning mr-2" data-toggle="modal" data-target="#addPerformanceModal">Add Performance Review</button>
+          <button class="btn btn-secondary mr-2" data-toggle="modal" data-target="#addHolidayModal">Add Holiday</button>
+          <button class="btn btn-danger mr-2" onclick="window.location.href='active-leave-list.html'">View Active Leaves</button>
+          <button class="btn btn-outline-secondary mr-2" onclick="exportAttendancePrompt()">Export Attendance</button>
+          <button class="btn btn-outline-primary mr-2" onclick="window.location.href='attendance-management.html'">Manage Attendance</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HR List -->
+  <div class="card mb-4">
+    <div class="card-header bg-primary text-white">
+      <h5 class="mb-0">HR Profiles</h5>
+    </div>
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-bordered table-hover">
+          <thead class="table-dark">
+            <tr>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Created By</th>
+              <th>Employees Managed</th>
+              <th>Status</th>
+              <th>Created Date</th>
+            </tr>
+          </thead>
+          <tbody id="hrTableBody">
+            <tr><td colspan="6" class="text-center">Loading HR profiles...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Designations -->
+  <div class="card mb-4">
+    <div class="card-header bg-info text-white">
+      <h5 class="mb-0">All Designations</h5>
+    </div>
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-bordered table-hover">
+          <thead class="table-dark">
+            <tr>
+              <th>Title</th>
+              <th>Description</th>
+              <th>Created Date</th>
+            </tr>
+          </thead>
+          <tbody id="designationTableBody">
+            <tr><td colspan="3" class="text-center">Loading designations...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pending Leave Requests -->
+  <div class="card mb-4">
+    <div class="card-header bg-warning text-white">
+      <h5 class="mb-0">Pending Leave Requests</h5>
+    </div>
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-bordered table-hover">
+          <thead class="table-dark">
+            <tr>
+              <th>Employee</th>
+              <th>Email</th>
+              <th>Leave Type</th>
+              <th>Start Date</th>
+              <th>End Date</th>
+              <th>Comment</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="pendingLeaveTableBody">
+            <tr><td colspan="7" class="text-center">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- All Employees -->
+  <div class="card mb-4">
+    <div class="card-header bg-success text-white">
+      <h5 class="mb-0">All Employees (With Creator Info)</h5>
+    </div>
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-bordered table-hover">
+          <thead class="table-dark">
+            <tr>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Designation</th>
+              <th>Created By</th>
+              <th>Creator Role</th>
+              <th>Status</th>
+              <th>Joined Date</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="employeeTableBody">
+            <tr><td colspan="8" class="text-center">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Performance Reviews -->
+  <div class="card mb-4">
+    <div class="card-header bg-secondary text-white">
+      <h5 class="mb-0">All Performance Reviews</h5>
+    </div>
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-bordered table-hover">
+          <thead class="table-dark">
+            <tr>
+              <th>Employee</th>
+              <th>Review Date</th>
+              <th>Rating</th>
+              <th>Comments</th>
+              <th>Reviewed By</th>
+            </tr>
+          </thead>
+          <tbody id="performanceTableBody">
+            <tr><td colspan="5" class="text-center">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Add HR Modal -->
+<div class="modal fade" id="addHRModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Add HR Profile</h5>
+        <button type="button" class="close" data-dismiss="modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="addHRForm">
+          <div class="form-group">
+            <label>Name <span class="text-danger">*</span></label>
+            <input type="text" id="hrName" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label>Email <span class="text-danger">*</span></label>
+            <input type="email" id="hrEmail" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label>Password <span class="text-danger">*</span></label>
+            <input type="password" id="hrPassword" class="form-control" required>
+          </div>
+          <button type="submit" class="btn btn-primary btn-block">Add HR</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add Employee Modal -->
+<div class="modal fade" id="addEmployeeModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Add New Employee</h5>
+        <button type="button" class="close" data-dismiss="modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="addEmployeeForm">
+          <div class="form-group">
+            <label>Name <span class="text-danger">*</span></label>
+            <input type="text" id="empName" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label>Email <span class="text-danger">*</span></label>
+            <input type="email" id="empEmail" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label>Password <span class="text-danger">*</span></label>
+            <input type="password" id="empPassword" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label>Designation</label>
+            <select id="empDesignation" class="form-control">
+              <option value="">Select Designation</option>
+            </select>
+          </div>
+          <button type="submit" class="btn btn-success btn-block">Add Employee</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add Designation Modal -->
+<div class="modal fade" id="addDesignationModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Add New Designation</h5>
+        <button type="button" class="close" data-dismiss="modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="addDesignationForm">
+          <div class="form-group">
+            <label>Title <span class="text-danger">*</span></label>
+            <input type="text" id="designationTitle" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label>Description</label>
+            <textarea id="designationDesc" class="form-control" rows="3"></textarea>
+          </div>
+          <button type="submit" class="btn btn-info btn-block">Add Designation</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add Performance Modal -->
+<div class="modal fade" id="addPerformanceModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Add Performance Review</h5>
+        <button type="button" class="close" data-dismiss="modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="addPerformanceForm">
+          <div class="form-group">
+            <label>Select Employee <span class="text-danger">*</span></label>
+            <select id="perfEmpId" class="form-control" required>
+              <option value="">Select Employee</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Review Date <span class="text-danger">*</span></label>
+            <input type="date" id="perfDate" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label>Rating (1-5) <span class="text-danger">*</span></label>
+            <select id="perfRating" class="form-control" required>
+              <option value="">Select Rating</option>
+              <option value="1">1 - Poor</option>
+              <option value="2">2 - Below Average</option>
+              <option value="3">3 - Average</option>
+              <option value="4">4 - Good</option>
+              <option value="5">5 - Excellent</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Comments <span class="text-danger">*</span></label>
+            <textarea id="perfComments" class="form-control" rows="3" required></textarea>
+          </div>
+          <button type="submit" class="btn btn-warning btn-block">Submit Review</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add Holiday Modal -->
+<div class="modal fade" id="addHolidayModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Add Holiday</h5>
+        <button type="button" class="close" data-dismiss="modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="addHolidayForm">
+          <div class="form-group">
+            <label>Date <span class="text-danger">*</span></label>
+            <input type="date" id="holidayDate" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label>Description <span class="text-danger">*</span></label>
+            <input type="text" id="holidayDesc" class="form-control" required>
+          </div>
+          <button type="submit" class="btn btn-secondary btn-block">Add Holiday</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Leave Action Modal -->
+<div class="modal fade" id="leaveActionModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Manage Leave Request</h5>
+        <button type="button" class="close" data-dismiss="modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="leaveActionForm">
+          <input type="hidden" id="leaveId">
+          <div class="form-group">
+            <label>Comment</label>
+            <textarea id="hrComment" class="form-control" rows="2"></textarea>
+          </div>
+          <button type="button" class="btn btn-success mr-2" onclick="manageLeave('approved')">Approve</button>
+          <button type="button" class="btn btn-danger" onclick="manageLeave('rejected')">Reject</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+<script>
+
+$(document).ready(function() {
+  
+  $('#logoutBtn').click(function() {
+    $.post('api/handler.php', {action: 'logout'}, function() {
+      window.location.href = 'index.html';
+    });
+  });
+
+  // Load all data on page load
+  loadDashboardStats();
+  loadHRList();
+  loadDesignations();
+  loadEmployeesDropdown();
+  loadEmployees();
+  loadPendingLeaves();
+  loadPerformance();
+
+  // Set default date for performance review
+  $('#perfDate').val(new Date().toISOString().split('T')[0]);
+
+  // Form submissions
+  $('#addHRForm').submit(addHRSubmit);
+  $('#addEmployeeForm').submit(addEmployeeSubmit);
+  $('#addDesignationForm').submit(addDesignationSubmit);
+  $('#addPerformanceForm').submit(addPerformanceSubmit);
+  $('#addHolidayForm').submit(addHolidaySubmit);
+});
+
+// ========== LOAD DASHBOARD STATS ==========
+function loadDashboardStats() {
+  $.ajax({
+    url: 'api/handler.php',
+    method: 'POST',
+    data: {action: 'get_dashboard_stats'},
+    dataType: 'json',
+    success: function(response) {
+      if(response.success) {
+        $('#totalEmployees').text(response.data.total_employees);
+        $('#presentToday').text(response.data.present_today);
+        $('#pendingLeaves').text(response.data.pending_leaves);
+        $('#upcomingHolidays').text(response.data.upcoming_holidays);
+      }
+    }
+  });
+}
+
+// ========== LOAD HR LIST ==========
+function loadHRList() {
+  $.ajax({
+    url: 'api/handler.php',
+    method: 'POST',
+    data: {action: 'get_hr_list'},
+    dataType: 'json',
+    success: function(response) {
+      if(response.success && response.data.length > 0) {
+        var html = '';
+        response.data.forEach(function(hr) {
+          var statusBadge = hr.status === 'active' ? '<span class="badge badge-success">Active</span>' : '<span class="badge badge-secondary">Inactive</span>';
+          
+          html += '<tr>';
+          html += '<td><strong>' + hr.name + '</strong></td>';
+          html += '<td>' + hr.email + '</td>';
+          html += '<td>' + (hr.created_by_name || 'Self') + '</td>';
+          html += '<td><span class="badge badge-info">' + hr.employees_managed + '</span></td>';
+          html += '<td>' + statusBadge + '</td>';
+          html += '<td>' + hr.created_at + '</td>';
+          html += '</tr>';
+        });
+        $('#hrTableBody').html(html);
+      } else {
+        $('#hrTableBody').html('<tr><td colspan="6" class="text-center">No HR profiles found</td></tr>');
+      }
+    },
+    error: function(xhr, status, error) {
+      console.error('Error loading HR list:', error);
+      $('#hrTableBody').html('<tr><td colspan="6" class="text-center text-danger">Error loading HR profiles</td></tr>');
+    }
+  });
+}
+
+// ========== LOAD DESIGNATIONS ==========
+function loadDesignations() {
+  $.ajax({
+    url: 'api/handler.php',
+    method: 'POST',
+    data: {action: 'get_designations'},
+    dataType: 'json',
+    success: function(response) {
+      if(response.success) {
+        var options = '<option value="">Select Designation</option>';
+        response.data.forEach(function(des) {
+          options += '<option value="' + des.id + '">' + des.title + '</option>';
+        });
+        $('#empDesignation').html(options);
+
+        var tableHtml = '';
+        response.data.forEach(function(des) {
+          tableHtml += '<tr>';
+          tableHtml += '<td>' + des.title + '</td>';
+          tableHtml += '<td>' + (des.description || '-') + '</td>';
+          tableHtml += '<td>' + des.created_at + '</td>';
+          tableHtml += '</tr>';
+        });
+        $('#designationTableBody').html(tableHtml);
+      }
+    }
+  });
+}
+
+// ========== LOAD EMPLOYEES DROPDOWN ==========
+function loadEmployeesDropdown() {
+  $.ajax({
+    url: 'api/handler.php',
+    method: 'POST',
+    data: {action: 'get_employees'},
+    dataType: 'json',
+    success: function(response) {
+      if(response.success) {
+        var options = '<option value="">Select Employee</option>';
+        response.data.forEach(function(emp) {
+          options += '<option value="' + emp.id + '">' + emp.name + ' (' + emp.email + ')</option>';
+        });
+        $('#perfEmpId').html(options);
+      }
+    }
+  });
+}
+
+// ========== LOAD EMPLOYEES ==========
+function loadEmployees() {
+  $.ajax({
+    url: 'api/handler.php',
+    method: 'POST',
+    data: {action: 'get_employees'},
+    dataType: 'json',
+    success: function(response) {
+      if(response.success && response.data.length > 0) {
+        var html = '';
+        response.data.forEach(function(emp) {
+          var statusBadge = emp.status === 'active' ? '<span class="badge badge-success">Active</span>' : '<span class="badge badge-secondary">Inactive</span>';
+          var creatorRole = emp.created_by_role ? emp.created_by_role.charAt(0).toUpperCase() + emp.created_by_role.slice(1) : '-';
+          
+          html += '<tr>';
+          html += '<td>' + emp.name + '</td>';
+          html += '<td>' + emp.email + '</td>';
+          html += '<td>' + (emp.designation || '-') + '</td>';
+          html += '<td>' + (emp.created_by_name || '-') + '</td>';
+          html += '<td><span class="badge badge-primary">' + creatorRole + '</span></td>';
+          html += '<td>' + statusBadge + '</td>';
+          html += '<td>' + emp.created_at + '</td>';
+          html += '<td><button class="btn btn-sm btn-info">Edit</button></td>';
+          html += '</tr>';
+        });
+        $('#employeeTableBody').html(html);
+      } else {
+        $('#employeeTableBody').html('<tr><td colspan="8" class="text-center">No employees found</td></tr>');
+      }
+    }
+  });
+}
+
+// ========== LOAD PENDING LEAVES ==========
+function loadPendingLeaves() {
+  $.ajax({
+    url: 'api/handler.php',
+    method: 'POST',
+    data: {action: 'get_leaves'},
+    dataType: 'json',
+    success: function(response) {
+      if(response.success && response.data.length > 0) {
+        var html = '';
+        response.data.forEach(function(leave) {
+          if(leave.status === 'pending') {
+            html += '<tr>';
+            html += '<td>' + (leave.name || 'N/A') + '</td>';
+            html += '<td>' + (leave.email || 'N/A') + '</td>';
+            html += '<td><span class="badge badge-info">' + leave.leave_type.toUpperCase() + '</span></td>';
+            html += '<td>' + leave.start_date + '</td>';
+            html += '<td>' + leave.end_date + '</td>';
+            html += '<td>' + (leave.comment || '-') + '</td>';
+            html += '<td><button class="btn btn-sm btn-primary" onclick="openLeaveAction(' + leave.id + ')">Manage</button></td>';
+            html += '</tr>';
+          }
+        });
+        if(html) {
+          $('#pendingLeaveTableBody').html(html);
+        } else {
+          $('#pendingLeaveTableBody').html('<tr><td colspan="7" class="text-center">No pending leaves</td></tr>');
+        }
+      } else {
+        $('#pendingLeaveTableBody').html('<tr><td colspan="7" class="text-center">No leaves found</td></tr>');
+      }
+    }
+  });
+}
+
+// ========== LOAD PERFORMANCE REVIEWS ==========
+function loadPerformance() {
+  $.ajax({
+    url: 'api/handler.php',
+    method: 'POST',
+    data: {action: 'get_performance'},
+    dataType: 'json',
+    success: function(response) {
+      if(response.success && response.data.length > 0) {
+        var html = '';
+        response.data.forEach(function(perf) {
+          html += '<tr>';
+          html += '<td>' + (perf.employee_name || 'N/A') + '</td>';
+          html += '<td>' + perf.review_date + '</td>';
+          html += '<td><span class="badge badge-' + (perf.rating >= 4 ? 'success' : 'warning') + '">' + perf.rating + '/5</span></td>';
+          html += '<td>' + perf.comments + '</td>';
+          html += '<td>' + (perf.reviewer || 'N/A') + '</td>';
+          html += '</tr>';
+        });
+        $('#performanceTableBody').html(html);
+      } else {
+        $('#performanceTableBody').html('<tr><td colspan="5" class="text-center">No performance reviews found</td></tr>');
+      }
+    }
+  });
+}
+
+// ========== ADD HR SUBMIT ==========
+function addHRSubmit(e) {
+  e.preventDefault();
+  
+  var name = $('#hrName').val().trim();
+  var email = $('#hrEmail').val().trim();
+  var password = $('#hrPassword').val();
+  
+  if(!name || !email || !password) {
+    alert('Please fill all required fields');
+    return;
+  }
+  
+  $.ajax({
+    url: 'api/handler.php',
+    method: 'POST',
+    data: {
+      action: 'add_hr',
+      name: name,
+      email: email,
+      password: password
+    },
+    dataType: 'json',
+    success: function(response) {
+      alert(response.message);
+      if(response.success) {
+        $('#addHRModal').modal('hide');
+        $('#addHRForm')[0].reset();
+        loadHRList();
+        loadDashboardStats();
+      }
+    }
+  });
+}
+
+// ========== ADD EMPLOYEE SUBMIT ==========
+function addEmployeeSubmit(e) {
+  e.preventDefault();
+  
+  var name = $('#empName').val().trim();
+  var email = $('#empEmail').val().trim();
+  var password = $('#empPassword').val();
+  var designation = $('#empDesignation').val();
+  
+  if(!name || !email || !password) {
+    alert('Please fill all required fields');
+    return;
+  }
+  
+  $.ajax({
+    url: 'api/handler.php',
+    method: 'POST',
+    data: {
+      action: 'add_employee',
+      name: name,
+      email: email,
+      password: password,
+      designation_id: designation
+    },
+    dataType: 'json',
+    success: function(response) {
+      alert(response.message);
+      if(response.success) {
+        $('#addEmployeeModal').modal('hide');
+        $('#addEmployeeForm')[0].reset();
+        loadEmployees();
+        loadEmployeesDropdown();
+        loadDashboardStats();
+      }
+    }
+  });
+}
+
+// ========== ADD DESIGNATION SUBMIT ==========
+function addDesignationSubmit(e) {
+  e.preventDefault();
+  
+  var title = $('#designationTitle').val().trim();
+  var desc = $('#designationDesc').val().trim();
+  
+  if(!title) {
+    alert('Please enter designation title');
+    return;
+  }
+  
+  $.ajax({
+    url: 'api/handler.php',
+    method: 'POST',
+    data: {
+      action: 'add_designation',
+      title: title,
+      description: desc
+    },
+    dataType: 'json',
+    success: function(response) {
+      alert(response.message);
+      if(response.success) {
+        $('#addDesignationModal').modal('hide');
+        $('#addDesignationForm')[0].reset();
+        loadDesignations();
+      }
+    }
+  });
+}
+
+// ========== ADD PERFORMANCE SUBMIT ==========
+function addPerformanceSubmit(e) {
+  e.preventDefault();
+  
+  var empId = $('#perfEmpId').val();
+  var date = $('#perfDate').val();
+  var rating = $('#perfRating').val();
+  var comments = $('#perfComments').val().trim();
+  
+  if(!empId || !date || !rating || !comments) {
+    alert('Please fill all required fields');
+    return;
+  }
+  
+  $.ajax({
+    url: 'api/handler.php',
+    method: 'POST',
+    data: {
+      action: 'add_performance',
+      user_id: empId,
+      review_date: date,
+      rating: rating,
+      comments: comments
+    },
+    dataType: 'json',
+    success: function(response) {
+      alert(response.message);
+      if(response.success) {
+        $('#addPerformanceModal').modal('hide');
+        $('#addPerformanceForm')[0].reset();
+        loadPerformance();
+      }
+    }
+  });
+}
+
+// ========== ADD HOLIDAY SUBMIT ==========
+function addHolidaySubmit(e) {
+  e.preventDefault();
+  
+  var date = $('#holidayDate').val();
+  var desc = $('#holidayDesc').val().trim();
+  
+  if(!date || !desc) {
+    alert('Please fill all required fields');
+    return;
+  }
+  
+  $.ajax({
+    url: 'api/handler.php',
+    method: 'POST',
+    data: {
+      action: 'add_holiday',
+      date: date,
+      description: desc
+    },
+    dataType: 'json',
+    success: function(response) {
+      alert(response.message);
+      if(response.success) {
+        $('#addHolidayModal').modal('hide');
+        $('#addHolidayForm')[0].reset();
+        loadDashboardStats();
+      }
+    }
+  });
+}
+
+// ========== LEAVE MANAGEMENT ==========
+function openLeaveAction(leaveId) {
+  $('#leaveId').val(leaveId);
+  $('#leaveActionModal').modal('show');
+}
+
+function manageLeave(status) {
+  var leaveId = $('#leaveId').val();
+  var comment = $('#hrComment').val().trim();
+  
+  $.ajax({
+    url: 'api/handler.php',
+    method: 'POST',
+    data: {
+      action: 'manage_leave',
+      leave_id: leaveId,
+      status: status,
+      hr_comment: comment
+    },
+    dataType: 'json',
+    success: function(response) {
+      alert(response.message);
+      if(response.success) {
+        $('#leaveActionModal').modal('hide');
+        $('#hrComment').val('');
+        loadPendingLeaves();
+        loadDashboardStats();
+      }
+    }
+  });
+}
+
+// ========== EXPORT ATTENDANCE ==========
+function exportAttendancePrompt() {
+  let format = prompt('Choose export format:\n1. CSV\n2. Excel\nEnter 1 or 2:', '1');
+  
+  if(format === '1') {
+    exportAttendanceToCSV();
+  } else if(format === '2') {
+    exportAttendanceToExcel();
+  } else if(format !== null) {
+    alert('Invalid option. Please enter 1 or 2.');
+  }
+}
+
+function exportAttendanceToCSV() {
+  $.ajax({
+    url: 'api/handler.php',
+    method: 'POST',
+    data: {action: 'export_attendance', format: 'csv'},
+    dataType: 'json',
+    success: function(response) {
+      if(response.success) {
+        downloadCSV(response.data, 'attendance_' + new Date().toISOString().split('T')[0] + '.csv');
+        alert('Attendance exported successfully as CSV');
+      } else {
+        alert(response.message || 'Export failed');
+      }
+    }
+  });
+}
+
+function exportAttendanceToExcel() {
+  $.ajax({
+    url: 'api/handler.php',
+    method: 'POST',
+    data: {action: 'export_attendance', format: 'excel'},
+    dataType: 'json',
+    success: function(response) {
+      if(response.success) {
+        downloadCSV(response.data, 'attendance_' + new Date().toISOString().split('T')[0] + '.xlsx');
+        alert('Attendance exported successfully as Excel');
+      } else {
+        alert(response.message || 'Export failed');
+      }
+    }
+  });
+}
+
+function downloadCSV(csv, filename) {
+  let link = document.createElement('a');
+  link.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+  link.setAttribute('download', filename);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+</script>
+
+</body>
+</html>

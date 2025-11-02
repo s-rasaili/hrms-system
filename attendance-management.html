@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Attendance Management - HRMS</title>
+  <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    .navbar { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+    .manual-entry { background: #fff3cd; border-left: 4px solid #ffc107; }
+    .badge-manual { background-color: #ffc107; color: #000; }
+    .badge-auto { background-color: #28a745; }
+  </style>
+</head>
+<body>
+
+<nav class="navbar navbar-expand navbar-dark">
+  <span class="navbar-brand">Attendance Management</span>
+  <div class="ml-auto">
+    <span class="text-white mr-3" id="userName">HR</span>
+    <button class="btn btn-outline-light btn-sm" id="logoutBtn">Logout</button>
+  </div>
+</nav>
+
+<div class="container-fluid mt-4">
+  
+  <!-- Manual Entry Section -->
+  <div class="card mb-4">
+    <div class="card-header bg-primary text-white">
+      <h5 class="mb-0">Add/Update Manual Attendance</h5>
+    </div>
+    <div class="card-body">
+      <form id="manualAttendanceForm">
+        <div class="row">
+          <div class="col-md-3">
+            <div class="form-group">
+              <label>Select Employee <span class="text-danger">*</span></label>
+              <select id="employeeSelect" class="form-control" required>
+                <option value="">Choose Employee</option>
+              </select>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="form-group">
+              <label>Date <span class="text-danger">*</span></label>
+              <input type="date" id="attendanceDate" class="form-control" required>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="form-group">
+              <label>Status <span class="text-danger">*</span></label>
+              <select id="attendanceStatus" class="form-control" required>
+                <option value="">Select Status</option>
+                <option value="present">Present</option>
+                <option value="absent">Absent</option>
+              </select>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <label>&nbsp;</label>
+            <button type="button" class="btn btn-info btn-block" onclick="toggleTimeFields()">Show Time Fields</button>
+          </div>
+        </div>
+
+        <div class="row" id="timeFieldsRow" style="display: none;">
+          <div class="col-md-3">
+            <div class="form-group">
+              <label>Time In</label>
+              <input type="time" id="inTime" class="form-control">
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="form-group">
+              <label>Time Out</label>
+              <input type="time" id="outTime" class="form-control">
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="form-group">
+              <label>Comment/Reason</label>
+              <input type="text" id="attendanceComment" class="form-control" placeholder="e.g., Late arrival, Early departure">
+            </div>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-success btn-lg btn-block">Save Attendance</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Filter Section -->
+  <div class="card mb-4">
+    <div class="card-header bg-info text-white">
+      <h5 class="mb-0">View Attendance Records</h5>
+    </div>
+    <div class="card-body">
+      <div class="row">
+        <div class="col-md-3">
+          <label>Filter by Employee</label>
+          <select id="filterEmployee" class="form-control">
+            <option value="">All Employees</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label>Month</label>
+          <input type="month" id="filterMonth" class="form-control">
+        </div>
+        <div class="col-md-2">
+          <label>Date</label>
+          <input type="date" id="filterDate" class="form-control">
+        </div>
+        <div class="col-md-2">
+          <label>&nbsp;</label>
+          <button class="btn btn-primary btn-block" onclick="applyFilters()">Filter</button>
+        </div>
+        <div class="col-md-2">
+          <label>&nbsp;</label>
+          <button class="btn btn-secondary btn-block" onclick="resetFilters()">Reset</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Attendance Records Table -->
+  <div class="card">
+    <div class="card-header bg-success text-white">
+      <h5 class="mb-0">All Attendance Records</h5>
+    </div>
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-bordered table-hover table-sm">
+          <thead class="table-dark">
+            <tr>
+              <th>Date</th>
+              <th>Employee</th>
+              <th>Email</th>
+              <th>Designation</th>
+              <th>Status</th>
+              <th>In Time</th>
+              <th>Out Time</th>
+              <th>Type</th>
+              <th>Entered By</th>
+              <th>Modified At</th>
+              <th>Comment</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="attendanceTableBody">
+            <tr><td colspan="12" class="text-center">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Edit Attendance Modal -->
+<div class="modal fade" id="editAttendanceModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Edit Attendance</h5>
+        <button type="button" class="close" data-dismiss="modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="editAttendanceForm">
+          <input type="hidden" id="editAttendanceId">
+          <div class="form-group">
+            <label>Employee</label>
+            <input type="text" class="form-control" id="editEmployeeName" readonly>
+          </div>
+          <div class="form-group">
+            <label>Date</label>
+            <input type="date" class="form-control" id="editDate" readonly>
+          </div>
+          <div class="form-group">
+            <label>Status</label>
+            <select class="form-control" id="editStatus">
+              <option value="present">Present</option>
+              <option value="absent">Absent</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Time In</label>
+            <input type="time" class="form-control" id="editInTime">
+          </div>
+          <div class="form-group">
+            <label>Time Out</label>
+            <input type="time" class="form-control" id="editOutTime">
+          </div>
+          <div class="form-group">
+            <label>Comment</label>
+            <textarea class="form-control" id="editComment" rows="2"></textarea>
+          </div>
+          <button type="submit" class="btn btn-primary btn-block">Update Attendance</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+<script>
+
+let currentFilters = {};
+
+$(document).ready(function() {
+  
+  $('#logoutBtn').click(function() {
+    $.post('api/handler.php', {action: 'logout'}, function() {
+      window.location.href = 'index.html';
+    });
+  });
+
+  // Set default date to today
+  $('#attendanceDate').val(new Date().toISOString().split('T')[0]);
+  $('#filterMonth').val(new Date().toISOString().slice(0, 7));
+
+  // Load employees
+  loadEmployees();
+  loadAttendance();
+
+  // Form submission
+  $('#manualAttendanceForm').submit(submitAttendance);
+  $('#editAttendanceForm').submit(submitEditAttendance);
+});
+
+// ========== LOAD EMPLOYEES ==========
+function loadEmployees() {
+  $.ajax({
+    url: 'api/handler.php',
+    method: 'POST',
+    data: {action: 'get_employees'},
+    dataType: 'json',
+    success: function(response) {
+      if(response.success) {
+        var options = '<option value="">Choose Employee</option>';
+        var filterOptions = '<option value="">All Employees</option>';
+        
+        response.data.forEach(function(emp) {
+          options += '<option value="' + emp.id + '">' + emp.name + ' (' + emp.email + ')</option>';
+          filterOptions += '<option value="' + emp.id + '">' + emp.name + ' (' + emp.email + ')</option>';
+        });
+        
+        $('#employeeSelect').html(options);
+        $('#filterEmployee').html(filterOptions);
+      }
+    }
+  });
+}
+
+// ========== TOGGLE TIME FIELDS ==========
+function toggleTimeFields() {
+  $('#timeFieldsRow').toggle();
+}
+
+// ========== SUBMIT ATTENDANCE ==========
+function submitAttendance(e) {
+  e.preventDefault();
+  
+  var employeeId = $('#employeeSelect').val();
+  var date = $('#attendanceDate').val();
+  var status = $('#attendanceStatus').val();
+  var inTime = $('#inTime').val() || null;
+  var outTime = $('#outTime').val() || null;
+  var comment = $('#attendanceComment').val().trim();
+  
+  if(!employeeId || !date || !status) {
+    alert('Please fill all required fields');
+    return;
+  }
+  
+  $.ajax({
+    url: 'api/handler.php',
+    method: 'POST',
+    data: {
+      action: 'add_manual_attendance',
+      employee_id: employeeId,
+      date: date,
+      status: status,
+      in_time: inTime,
+      out_time: outTime,
+      comment: comment
+    },
+    dataType: 'json',
+    success: function(response) {
+      alert(response.message);
+      if(response.success) {
+        $('#manualAttendanceForm')[0].reset();
+        $('#attendanceDate').val(new Date().toISOString().split('T')[0]);
+        $('#timeFieldsRow').hide();
+        loadAttendance();
+      }
+    }
+  });
+}
+
+// ========== LOAD ATTENDANCE ==========
+function loadAttendance() {
+  $.ajax({
+    url: 'api/handler.php',
+    method: 'POST',
+    data: currentFilters,
+    dataType: 'json',
+    success: function(response) {
+      if(response.success && response.data) {
+        // Need to use get_all_attendance action
+        $.ajax({
+          url: 'api/handler.php',
+          method: 'POST',
+          data: $.extend({action: 'get_all_attendance'}, currentFilters),
+          dataType: 'json',
+          success: function(res) {
+            displayAttendance(res.data || []);
+          }
+        });
+      }
+    },
+    error: function() {
+      // Fallback to get_all_attendance
+      $.ajax({
+        url: 'api/handler.php',
+        method: 'POST',
+        data: $.extend({action: 'get_all_attendance'}, currentFilters),
+        dataType: 'json',
+        success: function(res) {
+          displayAttendance(res.data || []);
+        }
+      });
+    }
+  });
+}
+
+// ========== DISPLAY ATTENDANCE ==========
+function displayAttendance(records) {
+  if(!records || records.length === 0) {
+    $('#attendanceTableBody').html('<tr><td colspan="12" class="text-center">No attendance records found</td></tr>');
+    return;
+  }
+  
+  var html = '';
+  records.forEach(function(att) {
+    var statusBadge = att.status === 'present' ? '<span class="badge badge-success">Present</span>' : '<span class="badge badge-danger">Absent</span>';
+    var typeBadge = att.is_manual ? '<span class="badge badge-manual">Manual</span>' : '<span class="badge badge-auto">Auto</span>';
+    var rowClass = att.is_manual ? 'manual-entry' : '';
+    
+    html += '<tr class="' + rowClass + '">';
+    html += '<td>' + att.date + '</td>';
+    html += '<td><strong>' + att.name + '</strong></td>';
+    html += '<td>' + att.email + '</td>';
+    html += '<td>' + (att.designation || '-') + '</td>';
+    html += '<td>' + statusBadge + '</td>';
+    html += '<td>' + (att.in_time || '-') + '</td>';
+    html += '<td>' + (att.out_time || '-') + '</td>';
+    html += '<td>' + typeBadge + '</td>';
+    html += '<td>' + (att.entered_by_name ? att.entered_by_name + ' (' + att.entered_by_role + ')' : '-') + '</td>';
+    html += '<td>' + (att.modified_at ? att.modified_at : att.created_at) + '</td>';
+    html += '<td>' + (att.comment || '-') + '</td>';
+    html += '<td><button class="btn btn-sm btn-info" onclick="openEditModal(' + att.id + ')">Edit</button></td>';
+    html += '</tr>';
+  });
+  
+  $('#attendanceTableBody').html(html);
+}
+
+// ========== OPEN EDIT MODAL ==========
+function openEditModal(attendanceId) {
+  // Find the record in the displayed data
+  $.ajax({
+    url: 'api/handler.php',
+    method: 'POST',
+    data: {action: 'get_all_attendance'},
+    dataType: 'json',
+    success: function(response) {
+      var record = response.data.find(r => r.id == attendanceId);
+      if(record) {
+        $('#editAttendanceId').val(record.id);
+        $('#editEmployeeName').val(record.name);
+        $('#editDate').val(record.date);
+        $('#editStatus').val(record.status);
+        $('#editInTime').val(record.in_time || '');
+        $('#editOutTime').val(record.out_time || '');
+        $('#editComment').val(record.comment || '');
+        
+        $('#editAttendanceModal').modal('show');
+      }
+    }
+  });
+}
+
+// ========== SUBMIT EDIT ATTENDANCE ==========
+function submitEditAttendance(e) {
+  e.preventDefault();
+  
+  var attendanceId = $('#editAttendanceId').val();
+  var status = $('#editStatus').val();
+  var inTime = $('#editInTime').val() || null;
+  var outTime = $('#editOutTime').val() || null;
+  var comment = $('#editComment').val().trim();
+  
+  $.ajax({
+    url: 'api/handler.php',
+    method: 'POST',
+    data: {
+      action: 'update_manual_attendance',
+      attendance_id: attendanceId,
+      status: status,
+      in_time: inTime,
+      out_time: outTime,
+      comment: comment
+    },
+    dataType: 'json',
+    success: function(response) {
+      alert(response.message);
+      if(response.success) {
+        $('#editAttendanceModal').modal('hide');
+        loadAttendance();
+      }
+    }
+  });
+}
+
+// ========== APPLY FILTERS ==========
+function applyFilters() {
+  currentFilters = {
+    action: 'get_all_attendance',
+    employee_id: $('#filterEmployee').val() || null,
+    month: $('#filterMonth').val().split('-')[1] || null,
+    year: $('#filterMonth').val().split('-')[0] || null,
+    date: $('#filterDate').val() || null
+  };
+  
+  // Remove null values
+  Object.keys(currentFilters).forEach(key => {
+    if(currentFilters[key] === null) {
+      delete currentFilters[key];
+    }
+  });
+  
+  loadAttendance();
+}
+
+// ========== RESET FILTERS ==========
+function resetFilters() {
+  $('#filterEmployee').val('');
+  $('#filterMonth').val(new Date().toISOString().slice(0, 7));
+  $('#filterDate').val('');
+  currentFilters = {};
+  loadAttendance();
+}
+
+</script>
+
+</body>
+</html>

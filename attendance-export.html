@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Attendance Export - HRMS</title>
+  <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    .navbar { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+  </style>
+</head>
+<body>
+
+<nav class="navbar navbar-expand navbar-dark">
+  <span class="navbar-brand">Attendance Export</span>
+  <div class="ml-auto">
+    <button class="btn btn-outline-light btn-sm" id="logoutBtn">Logout</button>
+  </div>
+</nav>
+
+<div class="container mt-5">
+  <div class="row">
+    <div class="col-md-8 offset-md-2">
+      <div class="card">
+        <div class="card-header bg-primary text-white">
+          <h5 class="mb-0">Export Employee Attendance Records</h5>
+        </div>
+        <div class="card-body">
+          <form id="exportForm">
+            <div class="row">
+              <div class="col-md-6">
+                <div class="form-group">
+                  <label>From Date</label>
+                  <input type="date" id="startDate" class="form-control">
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="form-group">
+                  <label>To Date</label>
+                  <input type="date" id="endDate" class="form-control">
+                </div>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="col-md-6">
+                <div class="form-group">
+                  <label>Filter by Status</label>
+                  <select id="statusFilter" class="form-control">
+                    <option value="">All Statuses</option>
+                    <option value="present">Present</option>
+                    <option value="absent">Absent</option>
+                  </select>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="form-group">
+                  <label>Filter by Employee</label>
+                  <select id="employeeFilter" class="form-control">
+                    <option value="">All Employees</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="col-md-6">
+                <div class="form-group">
+                  <label>Export Format</label>
+                  <select id="exportFormat" class="form-control">
+                    <option value="csv">CSV (.csv)</option>
+                    <option value="excel">Excel (.xlsx)</option>
+                  </select>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <label>&nbsp;</label>
+                <button type="submit" class="btn btn-success btn-block">Export Now</button>
+              </div>
+            </div>
+          </form>
+
+          <hr>
+
+          <h6>Preview (Last 20 Records)</h6>
+          <div class="table-responsive">
+            <table class="table table-bordered table-sm">
+              <thead>
+                <tr>
+                  <th>Employee</th>
+                  <th>Email</th>
+                  <th>Date</th>
+                  <th>Status</th>
+                  <th>In Time</th>
+                  <th>Out Time</th>
+                </tr>
+              </thead>
+              <tbody id="previewTableBody">
+                <tr><td colspan="6" class="text-center">Loading...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+<script>
+$(document).ready(function() {
+  
+  $('#logoutBtn').click(function() {
+    $.post('api/handler.php', {action: 'logout'}, function() {
+      window.location.href = 'index.html';
+    });
+  });
+
+  // Set default dates (current month)
+  let today = new Date();
+  let firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+  $('#startDate').val(firstDay.toISOString().split('T')[0]);
+  $('#endDate').val(today.toISOString().split('T')[0]);
+
+  // Load employees
+  loadEmployees();
+
+  // Load preview on date change
+  $('#startDate, #endDate, #statusFilter').change(function() {
+    loadPreview();
+  });
+
+  // Export form
+  $('#exportForm').submit(function(e) {
+    e.preventDefault();
+    
+    let format = $('#exportFormat').val();
+    let startDate = $('#startDate').val();
+    let endDate = $('#endDate').val();
+    let status = $('#statusFilter').val();
+    let employeeId = $('#employeeFilter').val();
+
+    $.ajax({
+      url: 'api/handler.php',
+      method: 'POST',
+      data: {
+        action: 'export_attendance_filtered',
+        format: format,
+        start_date: startDate,
+        end_date: endDate,
+        status: status,
+        employee_id: employeeId
+      },
+      dataType: 'json',
+      success: function(response) {
+        if(response.success) {
+          let filename = 'attendance_' + startDate + '_to_' + endDate + '.' + (format === 'csv' ? 'csv' : 'xlsx');
+          downloadFile(response.data, filename, format);
+          alert('Export successful!');
+        } else {
+          alert(response.message || 'Export failed');
+        }
+      }
+    });
+  });
+});
+
+function loadEmployees() {
+  $.ajax({
+    url: 'api/handler.php',
+    method: 'POST',
+    data: {action: 'get_employees'},
+    dataType: 'json',
+    success: function(response) {
+      if(response.success) {
+        let options = '<option value="">All Employees</option>';
+        response.data.forEach(function(emp) {
+          options += '<option value="' + emp.id + '">' + emp.name + ' (' + emp.email + ')</option>';
+        });
+        $('#employeeFilter').html(options);
+      }
+    }
+  });
+}
+
+function loadPreview() {
+  let startDate = $('#startDate').val();
+  let endDate = $('#endDate').val();
+  let status = $('#statusFilter').val();
+
+  $.ajax({
+    url: 'api/handler.php',
+    method: 'POST',
+    data: {
+      action: 'get_attendance',
+      start_date: startDate,
+      end_date: endDate,
+      status: status
+    },
+    dataType: 'json',
+    success: function(response) {
+      if(response.success && response.data.length > 0) {
+        let html = '';
+        response.data.slice(0, 20).forEach(function(att) {
+          let statusClass = att.status === 'present' ? 'success' : 'danger';
+          html += '<tr>';
+          html += '<td>' + att.name + '</td>';
+          html += '<td>' + att.email + '</td>';
+          html += '<td>' + att.date + '</td>';
+          html += '<td><span class="badge badge-' + statusClass + '">' + att.status + '</span></td>';
+          html += '<td>' + (att.in_time || '-') + '</td>';
+          html += '<td>' + (att.out_time || '-') + '</td>';
+          html += '</tr>';
+        });
+        $('#previewTableBody').html(html);
+      }
+    }
+  });
+}
+
+function downloadFile(data, filename, format) {
+  let link = document.createElement('a');
+  let mimeType = format === 'csv' ? 'text/csv' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+  link.href = 'data:' + mimeType + ';charset=utf-8,' + encodeURIComponent(data);
+  link.setAttribute('download', filename);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+</script>
+
+</body>
+</html>

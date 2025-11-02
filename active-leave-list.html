@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Active Leave List - HRMS</title>
+  <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    .navbar { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); }
+    .active-leave-card { 
+      border-left: 5px solid #dc3545; 
+      padding: 15px; 
+      margin-bottom: 15px; 
+      background: linear-gradient(135deg, #fff5f5 0%, #ffe0e0 100%);
+      border-radius: 5px;
+    }
+    .badge-active { background-color: #dc3545; }
+    .table-active tbody tr { background: #fff5f5; }
+    .countdown { font-size: 18px; font-weight: bold; color: #dc3545; }
+    .progress-bar-danger { background-color: #dc3545; }
+  </style>
+</head>
+<body>
+
+<nav class="navbar navbar-expand navbar-dark">
+  <span class="navbar-brand">Active Leave Monitoring</span>
+  <div class="ml-auto">
+    <span class="text-white mr-3" id="userName"></span>
+    <button class="btn btn-outline-light btn-sm" id="logoutBtn">Logout</button>
+  </div>
+</nav>
+
+<div class="container-fluid mt-4">
+  
+  <!-- Summary Cards -->
+  <div class="row mb-4">
+    <div class="col-md-3">
+      <div class="card border-danger">
+        <div class="card-body">
+          <h6 class="text-muted">Active Leave Today</h6>
+          <h3 id="activeTodayCount" style="color: #dc3545;">0</h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card border-warning">
+        <div class="card-body">
+          <h6 class="text-muted">Total Active Leaves</h6>
+          <h3 id="totalActiveCount" style="color: #ffc107;">0</h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card border-info">
+        <div class="card-body">
+          <h6 class="text-muted">Ending This Week</h6>
+          <h3 id="endingWeekCount" style="color: #17a2b8;">0</h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card border-success">
+        <div class="card-body">
+          <h6 class="text-muted">Employees on Leave</h6>
+          <h3 id="employeesOnLeaveCount" style="color: #28a745;">0</h3>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filter Section -->
+  <div class="card mb-4">
+    <div class="card-header bg-primary text-white">
+      <h5 class="mb-0">Filter Options</h5>
+    </div>
+    <div class="card-body">
+      <div class="row">
+        <div class="col-md-3">
+          <label>Filter by Leave Type</label>
+          <select id="leaveTypeFilter" class="form-control">
+            <option value="">All Types</option>
+            <option value="cl">Casual Leave (CL)</option>
+            <option value="sl">Sick Leave (SL)</option>
+            <option value="weekoff">Week Off</option>
+            <option value="holiday">Holiday</option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label>Search Employee</label>
+          <input type="text" id="employeeSearch" class="form-control" placeholder="Name or email">
+        </div>
+        <div class="col-md-3">
+          <label>&nbsp;</label>
+          <button class="btn btn-primary btn-block" onclick="filterActiveLeaves()">Filter</button>
+        </div>
+        <div class="col-md-3">
+          <label>&nbsp;</label>
+          <button class="btn btn-secondary btn-block" onclick="resetFilters()">Reset</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Active Leaves Table -->
+  <div class="card mb-4">
+    <div class="card-header bg-danger text-white">
+      <h5 class="mb-0">Currently Active Leaves (Table View)</h5>
+    </div>
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-bordered table-hover table-active">
+          <thead class="table-dark">
+            <tr>
+              <th>Employee</th>
+              <th>Email</th>
+              <th>Type</th>
+              <th>Started</th>
+              <th>Ends</th>
+              <th>Days Left</th>
+              <th>Total Days</th>
+              <th>Progress</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="activeLeaveTableBody">
+            <tr><td colspan="9" class="text-center">Loading active leaves...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Active Leaves Cards View -->
+  <div class="card">
+    <div class="card-header bg-info text-white">
+      <h5 class="mb-0">Active Leaves (Card View)</h5>
+    </div>
+    <div class="card-body" id="activeLeaveCardsContainer">
+      <p class="text-center">Loading...</p>
+    </div>
+  </div>
+
+</div>
+
+<!-- Employee Details Modal -->
+<div class="modal fade" id="employeeDetailsModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Employee Leave Details</h5>
+        <button type="button" class="close" data-dismiss="modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="row mb-3">
+          <div class="col-md-6">
+            <h6>Employee Info</h6>
+            <p><strong>Name:</strong> <span id="modalEmpName"></span></p>
+            <p><strong>Email:</strong> <span id="modalEmpEmail"></span></p>
+          </div>
+          <div class="col-md-6">
+            <h6>Leave Details</h6>
+            <p><strong>Type:</strong> <span id="modalLeaveType"></span></p>
+            <p><strong>Status:</strong> <span id="modalLeaveStatus"></span></p>
+          </div>
+        </div>
+
+        <div class="row mb-3">
+          <div class="col-md-12">
+            <h6>Leave Duration</h6>
+            <p><strong>Start Date:</strong> <span id="modalStartDate"></span> | <strong>End Date:</strong> <span id="modalEndDate"></span></p>
+            <p><strong>Total Days:</strong> <span id="modalTotalDays"></span> | <strong>Days Remaining:</strong> <span id="modalRemainingDays"></span></p>
+          </div>
+        </div>
+
+        <div class="row mb-3">
+          <div class="col-md-12">
+            <h6>Leave Progress</h6>
+            <div class="progress" style="height: 25px;">
+              <div id="modalProgressBar" class="progress-bar progress-bar-danger" role="progressbar" style="width: 0%;">
+                <span id="modalProgressText">0%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="row mb-3">
+          <div class="col-md-12">
+            <h6>Employee's Comment</h6>
+            <p id="modalComment" style="background: #f8f9fa; padding: 10px; border-radius: 5px;"></p>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+<script>
+
+let allLeaves = [];
+let allActiveLeaves = [];
+let currentLeaveId = null;
+
+$(document).ready(function() {
+  
+  $('#logoutBtn').click(function() {
+    $.post('api/handler.php', {action: 'logout'}, function() {
+      window.location.href = 'index.html';
+    });
+  });
+
+  loadActiveLeaves();
+  
+  // Refresh every 5 minutes
+  setInterval(loadActiveLeaves, 5 * 60 * 1000);
+
+  $('#leaveTypeFilter').change(filterActiveLeaves);
+  $('#employeeSearch').keyup(filterActiveLeaves);
+});
+
+// Load all approved leaves and filter active ones
+function loadActiveLeaves() {
+  $.ajax({
+    url: 'api/handler.php',
+    method: 'POST',
+    data: {action: 'get_leaves'},
+    dataType: 'json',
+    success: function(response) {
+      if(response.success && response.data.length > 0) {
+        allLeaves = response.data;
+        filterToActiveLeaves();
+        displayActiveLeaves();
+      } else {
+        $('#activeLeaveTableBody').html('<tr><td colspan="9" class="text-center">No active leaves</td></tr>');
+        $('#activeLeaveCardsContainer').html('<p class="text-center">No active leaves currently</p>');
+      }
+    }
+  });
+}
+
+// Filter to only active (approved) leaves that are within date range
+function filterToActiveLeaves() {
+  let today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  allActiveLeaves = allLeaves.filter(leave => {
+    if(leave.status !== 'approved') return false;
+
+    let startDate = new Date(leave.start_date);
+    let endDate = new Date(leave.end_date);
+    
+    return startDate <= today && endDate >= today;
+  });
+
+  updateSummaryStats();
+}
+
+// Update summary statistics
+function updateSummaryStats() {
+  let today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  // Active today
+  let activeTodayCount = allActiveLeaves.filter(leave => {
+    let startDate = new Date(leave.start_date);
+    let endDate = new Date(leave.end_date);
+    return startDate <= today && endDate >= today;
+  }).length;
+
+  // Ending this week
+  let weekEnd = new Date(today);
+  weekEnd.setDate(weekEnd.getDate() + 7);
+  let endingWeekCount = allActiveLeaves.filter(leave => {
+    let endDate = new Date(leave.end_date);
+    return endDate >= today && endDate <= weekEnd;
+  }).length;
+
+  // Unique employees
+  let uniqueEmployees = new Set(allActiveLeaves.map(l => l.email)).size;
+
+  $('#activeTodayCount').text(activeTodayCount);
+  $('#totalActiveCount').text(allActiveLeaves.length);
+  $('#endingWeekCount').text(endingWeekCount);
+  $('#employeesOnLeaveCount').text(uniqueEmployees);
+}
+
+// Display active leaves
+function displayActiveLeaves() {
+  if(allActiveLeaves.length === 0) {
+    $('#activeLeaveTableBody').html('<tr><td colspan="9" class="text-center text-success"><strong>✓ No active leaves - All employees present!</strong></td></tr>');
+    $('#activeLeaveCardsContainer').html('<p class="text-center text-success"><strong>✓ No active leaves - All employees present!</strong></p>');
+    return;
+  }
+
+  // Table view
+  let tableHtml = '';
+  let today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  allActiveLeaves.forEach(function(leave) {
+    let startDate = new Date(leave.start_date);
+    let endDate = new Date(leave.end_date);
+    let totalDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+    let daysLeft = Math.ceil((endDate - today) / (1000 * 60 * 60 * 24)) + 1;
+    let daysUsed = totalDays - daysLeft;
+    let progress = Math.round((daysUsed / totalDays) * 100);
+
+    tableHtml += '<tr>';
+    tableHtml += '<td><strong>' + (leave.name || 'N/A') + '</strong></td>';
+    tableHtml += '<td>' + (leave.email || 'N/A') + '</td>';
+    tableHtml += '<td><span class="badge badge-info">' + leave.leave_type.toUpperCase() + '</span></td>';
+    tableHtml += '<td>' + leave.start_date + '</td>';
+    tableHtml += '<td>' + leave.end_date + '</td>';
+    tableHtml += '<td><span class="countdown">' + daysLeft + '</span></td>';
+    tableHtml += '<td>' + totalDays + '</td>';
+    tableHtml += '<td>';
+    tableHtml += '<div class="progress" style="height: 20px;">';
+    tableHtml += '<div class="progress-bar progress-bar-danger" style="width: ' + progress + '%;">' + progress + '%</div>';
+    tableHtml += '</div>';
+    tableHtml += '</td>';
+    tableHtml += '<td><button class="btn btn-sm btn-outline-info" onclick="openEmployeeDetails(' + leave.id + ')">View</button></td>';
+    tableHtml += '</tr>';
+  });
+  $('#activeLeaveTableBody').html(tableHtml);
+
+  // Cards view
+  let cardsHtml = '';
+  allActiveLeaves.forEach(function(leave) {
+    let startDate = new Date(leave.start_date);
+    let endDate = new Date(leave.end_date);
+    let totalDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+    let daysLeft = Math.ceil((endDate - today) / (1000 * 60 * 60 * 24)) + 1;
+    let daysUsed = totalDays - daysLeft;
+    let progress = Math.round((daysUsed / totalDays) * 100);
+
+    cardsHtml += '<div class="active-leave-card">';
+    cardsHtml += '<div class="row">';
+    cardsHtml += '<div class="col-md-8">';
+    cardsHtml += '<h6><strong>' + (leave.name || 'Unknown') + '</strong></h6>';
+    cardsHtml += '<p style="margin: 5px 0;"><small class="text-muted">' + (leave.email || 'N/A') + '</small></p>';
+    cardsHtml += '<p style="margin: 5px 0;"><span class="badge badge-info">' + leave.leave_type.toUpperCase() + '</span>';
+    cardsHtml += ' | <strong>' + leave.start_date + '</strong> to <strong>' + leave.end_date + '</strong></p>';
+    cardsHtml += '</div>';
+    cardsHtml += '<div class="col-md-4 text-right">';
+    cardsHtml += '<p style="font-size: 24px; color: #dc3545; margin: 0;"><strong>' + daysLeft + '</strong></p>';
+    cardsHtml += '<p style="margin: 0; font-size: 12px;"><strong>Days Left</strong></p>';
+    cardsHtml += '</div>';
+    cardsHtml += '</div>';
+    cardsHtml += '<div class="progress mt-2" style="height: 15px;">';
+    cardsHtml += '<div class="progress-bar progress-bar-danger" style="width: ' + progress + '%;">' + progress + '%</div>';
+    cardsHtml += '</div>';
+    cardsHtml += '<p style="margin-top: 10px; margin-bottom: 0; font-size: 12px;"><strong>Used:</strong> ' + daysUsed + ' days | <strong>Total:</strong> ' + totalDays + ' days</p>';
+    if(leave.comment) {
+      cardsHtml += '<p style="margin-top: 8px; margin-bottom: 0; padding-top: 8px; border-top: 1px solid rgba(0,0,0,0.1);"><small><strong>Note:</strong> ' + leave.comment + '</small></p>';
+    }
+    cardsHtml += '<p style="margin-top: 8px; margin-bottom: 0;"><button class="btn btn-sm btn-outline-danger" onclick="openEmployeeDetails(' + leave.id + ')">Details</button></p>';
+    cardsHtml += '</div>';
+  });
+  $('#activeLeaveCardsContainer').html(cardsHtml);
+}
+
+// Filter active leaves
+function filterActiveLeaves() {
+  let leaveType = $('#leaveTypeFilter').val();
+  let search = $('#employeeSearch').val().toLowerCase();
+
+  let filtered = allActiveLeaves.filter(function(leave) {
+    let matchType = !leaveType || leave.leave_type === leaveType;
+    let matchSearch = !search || 
+                      (leave.name && leave.name.toLowerCase().includes(search)) ||
+                      (leave.email && leave.email.toLowerCase().includes(search));
+    return matchType && matchSearch;
+  });
+
+  if(filtered.length === 0) {
+    $('#activeLeaveTableBody').html('<tr><td colspan="9" class="text-center">No matching active leaves found</td></tr>');
+    $('#activeLeaveCardsContainer').html('<p class="text-center">No matching active leaves found</p>');
+    return;
+  }
+
+  // Display filtered
+  let today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  let tableHtml = '';
+  filtered.forEach(function(leave) {
+    let startDate = new Date(leave.start_date);
+    let endDate = new Date(leave.end_date);
+    let totalDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+    let daysLeft = Math.ceil((endDate - today) / (1000 * 60 * 60 * 24)) + 1;
+    let daysUsed = totalDays - daysLeft;
+    let progress = Math.round((daysUsed / totalDays) * 100);
+
+    tableHtml += '<tr>';
+    tableHtml += '<td><strong>' + (leave.name || 'N/A') + '</strong></td>';
+    tableHtml += '<td>' + (leave.email || 'N/A') + '</td>';
+    tableHtml += '<td><span class="badge badge-info">' + leave.leave_type.toUpperCase() + '</span></td>';
+    tableHtml += '<td>' + leave.start_date + '</td>';
+    tableHtml += '<td>' + leave.end_date + '</td>';
+    tableHtml += '<td><span class="countdown">' + daysLeft + '</span></td>';
+    tableHtml += '<td>' + totalDays + '</td>';
+    tableHtml += '<td>';
+    tableHtml += '<div class="progress" style="height: 20px;">';
+    tableHtml += '<div class="progress-bar progress-bar-danger" style="width: ' + progress + '%;">' + progress + '%</div>';
+    tableHtml += '</div>';
+    tableHtml += '</td>';
+    tableHtml += '<td><button class="btn btn-sm btn-outline-info" onclick="openEmployeeDetails(' + leave.id + ')">View</button></td>';
+    tableHtml += '</tr>';
+  });
+  $('#activeLeaveTableBody').html(tableHtml);
+}
+
+// Reset filters
+function resetFilters() {
+  $('#leaveTypeFilter').val('');
+  $('#employeeSearch').val('');
+  displayActiveLeaves();
+}
+
+// Open employee details modal
+function openEmployeeDetails(leaveId) {
+  let leave = allActiveLeaves.find(l => l.id == leaveId);
+  if(!leave) return;
+
+  currentLeaveId = leaveId;
+
+  let startDate = new Date(leave.start_date);
+  let endDate = new Date(leave.end_date);
+  let today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  let totalDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+  let daysLeft = Math.ceil((endDate - today) / (1000 * 60 * 60 * 24)) + 1;
+  let daysUsed = totalDays - daysLeft;
+  let progress = Math.round((daysUsed / totalDays) * 100);
+
+  $('#modalEmpName').text(leave.name || 'N/A');
+  $('#modalEmpEmail').text(leave.email || 'N/A');
+  $('#modalLeaveType').text(leave.leave_type.toUpperCase());
+  $('#modalLeaveStatus').html('<span class="badge badge-success">ACTIVE</span>');
+  $('#modalStartDate').text(leave.start_date);
+  $('#modalEndDate').text(leave.end_date);
+  $('#modalTotalDays').text(totalDays);
+  $('#modalRemainingDays').text(daysLeft);
+  $('#modalComment').text(leave.comment || 'No comments');
+
+  $('#modalProgressBar').css('width', progress + '%').text(progress + '%');
+
+  $('#employeeDetailsModal').modal('show');
+}
+
+</script>
+
+</body>
+</html>

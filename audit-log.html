@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Audit Log - HRMS</title>
+  <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    .navbar { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+  </style>
+</head>
+<body>
+
+<nav class="navbar navbar-expand navbar-dark">
+  <span class="navbar-brand">Audit Log</span>
+  <div class="ml-auto">
+    <button class="btn btn-outline-light btn-sm" id="logoutBtn">Logout</button>
+  </div>
+</nav>
+
+<div class="container-fluid mt-4">
+  
+  <div class="card">
+    <div class="card-header bg-primary text-white">
+      <h5 class="mb-0">Administrative Actions Audit Trail</h5>
+    </div>
+    <div class="card-body">
+      <div class="row mb-3">
+        <div class="col-md-4">
+          <label>Filter by Action Type</label>
+          <select id="actionFilter" class="form-control">
+            <option value="">All Actions</option>
+            <option value="EMPLOYEE_CREATED">Employee Created</option>
+            <option value="HR_CREATED">HR Created</option>
+            <option value="EMPLOYEE_UPDATED">Employee Updated</option>
+            <option value="LEAVE_APPROVED">Leave Approved</option>
+            <option value="LEAVE_REJECTED">Leave Rejected</option>
+          </select>
+        </div>
+        <div class="col-md-4">
+          <label>&nbsp;</label>
+          <button class="btn btn-primary btn-block" onclick="loadAuditLog()">Load Log</button>
+        </div>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table table-bordered table-hover">
+          <thead class="table-dark">
+            <tr>
+              <th>Action</th>
+              <th>Performed By</th>
+              <th>Role</th>
+              <th>Target User</th>
+              <th>Details</th>
+              <th>Date & Time</th>
+            </tr>
+          </thead>
+          <tbody id="auditTableBody">
+            <tr><td colspan="6" class="text-center">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+<script>
+
+$(document).ready(function() {
+  $('#logoutBtn').click(function() {
+    $.post('api/handler.php', {action: 'logout'}, function() {
+      window.location.href = 'index.html';
+    });
+  });
+
+  loadAuditLog();
+});
+
+function loadAuditLog() {
+  var actionType = $('#actionFilter').val();
+
+  $.ajax({
+    url: 'api/handler.php',
+    method: 'POST',
+    data: {
+      action: 'get_audit_log',
+      action_type: actionType,
+      limit: 100
+    },
+    dataType: 'json',
+    success: function(response) {
+      if(response.success && response.data.length > 0) {
+        var html = '';
+        response.data.forEach(function(log) {
+          var actionLabel = log.action_type.replace(/_/g, ' ');
+          var actionClass = log.action_type.includes('CREATED') ? 'success' : 
+                           log.action_type.includes('APPROVED') ? 'info' : 
+                           log.action_type.includes('REJECTED') ? 'danger' : 'secondary';
+
+          html += '<tr>';
+          html += '<td><span class="badge badge-' + actionClass + '">' + actionLabel + '</span></td>';
+          html += '<td>' + (log.performed_by || '-') + '</td>';
+          html += '<td>' + (log.performer_role ? log.performer_role.toUpperCase() : '-') + '</td>';
+          html += '<td>' + (log.target_name || '-') + '</td>';
+          html += '<td>' + (log.details || '-') + '</td>';
+          html += '<td>' + log.created_at + '</td>';
+          html += '</tr>';
+        });
+        $('#auditTableBody').html(html);
+      } else {
+        $('#auditTableBody').html('<tr><td colspan="6" class="text-center">No audit logs found</td></tr>');
+      }
+    }
+  });
+}
+
+</script>
+
+</body>
+</html>

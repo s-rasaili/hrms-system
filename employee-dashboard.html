@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Employee Dashboard</title>
+  <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    .stat-card { border-left: 4px solid #667eea; }
+    .navbar { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+  </style>
+</head>
+<body>
+
+<nav class="navbar navbar-expand navbar-dark">
+  <span class="navbar-brand">Employee Dashboard</span>
+  <div class="ml-auto">
+    <span class="text-white mr-3" id="userName"></span>
+    <button class="btn btn-outline-light btn-sm" id="logoutBtn">Logout</button>
+  </div>
+</nav>
+
+<div class="container mt-4">
+  
+  <!-- Stats Cards -->
+  <div class="row mb-4">
+    <div class="col-md-3">
+      <div class="card stat-card">
+        <div class="card-body">
+          <h6 class="text-muted">Present Days (This Month)</h6>
+          <h3 id="presentDays">0</h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card stat-card">
+        <div class="card-body">
+          <h6 class="text-muted">Absent Days (This Month)</h6>
+          <h3 id="absentDays">0</h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card stat-card">
+        <div class="card-body">
+          <h6 class="text-muted">Pending Leaves</h6>
+          <h3 id="pendingLeaves">0</h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card stat-card">
+        <div class="card-body">
+          <h6 class="text-muted">Average Rating</h6>
+          <h3 id="avgRating">0</h3>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mark Attendance -->
+  <div class="card mb-4">
+    <div class="card-header bg-primary text-white">
+      <h5 class="mb-0">Mark Today's Attendance</h5>
+    </div>
+    <div class="card-body">
+      <div class="row">
+        <div class="col-md-6">
+          <button id="markPresent" class="btn btn-success btn-block">Mark Present (In)</button>
+        </div>
+        <div class="col-md-6">
+          <button id="markAbsent" class="btn btn-danger btn-block">Mark Absent</button>
+        </div>
+      </div>
+      <div class="form-group mt-3">
+        <label>Comment (Optional)</label>
+        <textarea id="attendanceComment" class="form-control" rows="2" placeholder="Add any comment"></textarea>
+      </div>
+      <div id="attendanceMsg"></div>
+    </div>
+  </div>
+
+  <!-- Apply Leave -->
+  <div class="card mb-4">
+    <div class="card-header bg-info text-white">
+      <h5 class="mb-0">Apply for Leave</h5>
+    </div>
+    <div class="card-body">
+      <form id="leaveForm">
+        <div class="row">
+          <div class="col-md-6">
+            <div class="form-group">
+              <label>Leave Type <span class="text-danger">*</span></label>
+              <select id="leaveType" class="form-control" required>
+                <option value="">Select Type</option>
+                <option value="cl">Casual Leave (CL)</option>
+                <option value="sl">Sick Leave (SL)</option>
+                <option value="weekoff">Week Off</option>
+                <option value="holiday">Holiday</option>
+              </select>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="form-group">
+              <label>Start Date <span class="text-danger">*</span></label>
+              <input type="date" id="startDate" class="form-control" required>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="form-group">
+              <label>End Date <span class="text-danger">*</span></label>
+              <input type="date" id="endDate" class="form-control" required>
+            </div>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Comment</label>
+          <textarea id="leaveComment" class="form-control" rows="2" placeholder="Reason for leave"></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary">Submit Leave Application</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Leave Status -->
+  <div class="card mb-4">
+    <div class="card-header bg-secondary text-white">
+      <h5 class="mb-0">My Leave Applications</h5>
+    </div>
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-bordered">
+          <thead>
+            <tr>
+              <th>Type</th>
+              <th>Start Date</th>
+              <th>End Date</th>
+              <th>Status</th>
+              <th>Comment</th>
+              <th>HR Comment</th>
+            </tr>
+          </thead>
+          <tbody id="leaveTableBody">
+            <tr><td colspan="6" class="text-center">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Attendance History -->
+  <div class="card mb-4">
+    <div class="card-header bg-success text-white">
+      <h5 class="mb-0">My Attendance History (Last 30 Days)</h5>
+    </div>
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-bordered">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Status</th>
+              <th>In Time</th>
+              <th>Out Time</th>
+              <th>Comment</th>
+            </tr>
+          </thead>
+          <tbody id="attendanceTableBody">
+            <tr><td colspan="5" class="text-center">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Performance Reviews -->
+  <div class="card mb-4">
+    <div class="card-header bg-warning text-white">
+      <h5 class="mb-0">My Performance Reviews</h5>
+    </div>
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-bordered">
+          <thead>
+            <tr>
+              <th>Review Date</th>
+              <th>Rating</th>
+              <th>Comments</th>
+              <th>Reviewed By</th>
+            </tr>
+          </thead>
+          <tbody id="performanceTableBody">
+            <tr><td colspan="4" class="text-center">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+<script>
+$(document).ready(function() {
+  
+  // Logout
+  $('#logoutBtn').click(function() {
+    $.post('api/handler.php', {action: 'logout'}, function() {
+      window.location.href = 'index.html';
+    });
+  });
+
+  // Load dashboard stats
+  function loadStats() {
+    $.ajax({
+      url: 'api/handler.php',
+      method: 'POST',
+      data: {action: 'get_dashboard_stats'},
+      dataType: 'json',
+      success: function(response) {
+        if(response.success) {
+          $('#presentDays').text(response.data.present_days);
+          $('#absentDays').text(response.data.absent_days);
+          $('#pendingLeaves').text(response.data.pending_leaves);
+          $('#avgRating').text(response.data.avg_rating);
+        }
+      }
+    });
+  }
+
+  // Mark attendance
+  $('#markPresent, #markAbsent').click(function() {
+    var status = $(this).attr('id') === 'markPresent' ? 'present' : 'absent';
+    var comment = $('#attendanceComment').val().trim();
+    
+    $.ajax({
+      url: 'api/handler.php',
+      method: 'POST',
+      data: {
+        action: 'mark_attendance',
+        status: status,
+        comment: comment
+      },
+      dataType: 'json',
+      success: function(response) {
+        if(response.success) {
+          $('#attendanceMsg').html('<div class="alert alert-success mt-2">' + response.message + '</div>');
+          $('#attendanceComment').val('');
+          loadAttendance();
+          loadStats();
+        } else {
+          $('#attendanceMsg').html('<div class="alert alert-danger mt-2">' + response.message + '</div>');
+        }
+      }
+    });
+  });
+
+  // Apply leave
+  $('#leaveForm').submit(function(e) {
+    e.preventDefault();
+    
+    var leaveType = $('#leaveType').val();
+    var startDate = $('#startDate').val();
+    var endDate = $('#endDate').val();
+    var comment = $('#leaveComment').val().trim();
+    
+    if(!leaveType || !startDate || !endDate) {
+      alert('Please fill all required fields');
+      return;
+    }
+    
+    $.ajax({
+      url: 'api/handler.php',
+      method: 'POST',
+      data: {
+        action: 'apply_leave',
+        leave_type: leaveType,
+        start_date: startDate,
+        end_date: endDate,
+        comment: comment
+      },
+      dataType: 'json',
+      success: function(response) {
+        if(response.success) {
+          alert(response.message);
+          $('#leaveForm')[0].reset();
+          loadLeaves();
+          loadStats();
+        } else {
+          alert(response.message);
+        }
+      }
+    });
+  });
+
+  // Load leaves
+  function loadLeaves() {
+    $.ajax({
+      url: 'api/handler.php',
+      method: 'POST',
+      data: {action: 'get_leaves'},
+      dataType: 'json',
+      success: function(response) {
+        if(response.success && response.data.length > 0) {
+          var html = '';
+          response.data.forEach(function(leave) {
+            var statusClass = leave.status === 'approved' ? 'success' : (leave.status === 'rejected' ? 'danger' : 'warning');
+            html += '<tr>';
+            html += '<td>' + leave.leave_type.toUpperCase() + '</td>';
+            html += '<td>' + leave.start_date + '</td>';
+            html += '<td>' + leave.end_date + '</td>';
+            html += '<td><span class="badge badge-' + statusClass + '">' + leave.status + '</span></td>';
+            html += '<td>' + (leave.comment || '-') + '</td>';
+            html += '<td>' + (leave.hr_comment || '-') + '</td>';
+            html += '</tr>';
+          });
+          $('#leaveTableBody').html(html);
+        } else {
+          $('#leaveTableBody').html('<tr><td colspan="6" class="text-center">No leave applications found</td></tr>');
+        }
+      }
+    });
+  }
+
+  // Load attendance
+  function loadAttendance() {
+    $.ajax({
+      url: 'api/handler.php',
+      method: 'POST',
+      data: {action: 'get_attendance'},
+      dataType: 'json',
+      success: function(response) {
+        if(response.success && response.data.length > 0) {
+          var html = '';
+          response.data.forEach(function(att) {
+            var statusClass = att.status === 'present' ? 'success' : 'danger';
+            html += '<tr>';
+            html += '<td>' + att.date + '</td>';
+            html += '<td><span class="badge badge-' + statusClass + '">' + att.status + '</span></td>';
+            html += '<td>' + (att.in_time || '-') + '</td>';
+            html += '<td>' + (att.out_time || '-') + '</td>';
+            html += '<td>' + (att.comment || '-') + '</td>';
+            html += '</tr>';
+          });
+          $('#attendanceTableBody').html(html);
+        } else {
+          $('#attendanceTableBody').html('<tr><td colspan="5" class="text-center">No attendance records found</td></tr>');
+        }
+      }
+    });
+  }
+
+  // Load performance
+  function loadPerformance() {
+    $.ajax({
+      url: 'api/handler.php',
+      method: 'POST',
+      data: {action: 'get_performance'},
+      dataType: 'json',
+      success: function(response) {
+        if(response.success && response.data.length > 0) {
+          var html = '';
+          response.data.forEach(function(perf) {
+            html += '<tr>';
+            html += '<td>' + perf.review_date + '</td>';
+            html += '<td><strong>' + perf.rating + '/5</strong></td>';
+            html += '<td>' + perf.comments + '</td>';
+            html += '<td>' + perf.reviewer + '</td>';
+            html += '</tr>';
+          });
+          $('#performanceTableBody').html(html);
+        } else {
+          $('#performanceTableBody').html('<tr><td colspan="4" class="text-center">No performance reviews yet</td></tr>');
+        }
+      }
+    });
+  }
+
+  // Initial load
+  loadStats();
+  loadLeaves();
+  loadAttendance();
+  loadPerformance();
+});
+</script>
+
+</body>
+</html>
