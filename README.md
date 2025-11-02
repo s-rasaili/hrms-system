@@ -389,7 +389,7 @@ MIT License - See LICENSE file for details
 ## 📞 Support
 
 - **Issues:** [GitHub Issues](https://github.com/s-rasaili/hrms-system/issues)
-- **Email:** support@example.com
+- **Email:** sacrasa3@gmail.com
 - **Documentation:** See inline code comments
 
 ---
@@ -417,5 +417,6 @@ MIT License - See LICENSE file for details
 ---
 
 **Made with ❤️ | Last Updated: November 2, 2025**
+
 
 
